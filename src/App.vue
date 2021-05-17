@@ -8,7 +8,10 @@
     <br>
     {{ filteredTodos.length }} 件を表示中
 
-    <button @click="removeChecked()" class="button_remove">
+    <button @click="removeAll()" class="button_remove">
+      すべて削除
+    </button>
+    <button @click.ctrl="removeChecked()" class="button_remove">
       選択したものを削除
     </button>
 
@@ -145,6 +148,10 @@ export default class App extends Vue {
         i--
       }
     }
+  }
+
+  private removeAll(){
+    this.todos.splice(0);
   }
 
   private toggleState(todo: TodoItem) {
