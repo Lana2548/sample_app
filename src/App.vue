@@ -6,19 +6,24 @@
       {{ text }}
     </label>
     <br>
+
+    <!-- 件数の表示 -->
     {{ filteredTodos.length }} 件を表示中
 
+    <!-- 全ての要素を削除する -->
     <button @click="removeAll()" class="button_remove">
       すべて削除
     </button>
+    <!-- 選択したものを削除する -->
     <button @click.ctrl="removeChecked()" class="button_remove">
       選択したものを削除
     </button>
 
-
+    <!-- メモアプリのテーブル（本体） -->
     <div id="app">
       <table>
         <thead>
+          <!-- 見出しの行 -->
           <tr>
             <th class="id" @click="sortList('id')">ID</th>
             <th class="comment">タスク内容</th>
@@ -28,31 +33,44 @@
             <th class="button">-</th>
           </tr>
         </thead>
-          <tbody>
-            <tr v-for="(todo, index) in filteredTodos" :key="todo.id" draggable @dragstart="dragList($event, index)" @drop="dropList($event, index)" @dragover.prevent @dragenter.prevent>
-              <th><input type="checkbox" v-model="todo.checked">{{ todo.id }}</th>
-              <td>{{ todo.name }}</td>
-              <td>{{ todo.deadline }}</td>
 
-              <td class="priority">
-                <button @click="togglePriority(todo)">
-                  {{ priority_labels.get(todo.priority) }}
-                </button>
-              </td>
+        <!-- テーブル本体 -->
+        <tbody>
+          <!-- v-forを使って1行ずつレンダリング -->
+          <tr v-for="(todo, index) in filteredTodos"
+            :key="todo.id" 
+            draggable 
+            @dragstart="dragList($event, index)" 
+            @drop="dropList($event, index)" 
+            @dragover.prevent 
+            @dragenter.prevent>
 
-              <td class="state">
-                <button @click="toggleState(todo)">
-                  {{ labels.get(todo.state) }}
-                </button>
-              </td>
-
-              <td class="button">
-                <button @click.shift="removeTodo(todo)">
-                  削除
-                </button>
-              </td>
-            </tr>
-          </tbody>
+            <!-- 複数行選択して削除するときに使うチェックボックス -->
+            <th><input type="checkbox" v-model="todo.checked">{{ todo.id }}</th>
+            <!-- 名前: string -->
+            <td>{{ todo.name }}</td>
+            <!-- 期限: Date -->
+            <td>{{ todo.deadline }}</td>
+            <!-- 優先度: Priority -->
+            <td class="priority">
+              <button @click="togglePriority(todo)">
+                {{ priority_labels.get(todo.priority) }}
+              </button>
+            </td>
+            <!-- 状態: State -->
+            <td class="state">
+              <button @click="toggleState(todo)">
+                {{ labels.get(todo.state) }}
+              </button>
+            </td>
+            <!-- 削除ボタン -->
+            <td class="button">
+              <button @click.shift="removeTodo(todo)">
+                削除
+              </button>
+            </td>
+          </tr>
+        </tbody>
       </table>
     </div>
     
@@ -61,6 +79,7 @@
       ※削除ボタンはシフトキーを押しながらクリックして下さい
     </p>
 
+    <!-- Todoの追加 -->
     <h2>新しい作業の追加</h2>
     <form class="add-item" @submit.prevent="addTodo">
       タスク内容 <input type="text" ref="name">
@@ -71,40 +90,49 @@
 </template>
 
 <script lang="ts">
+//各種必要ファイルからクラスや型をimportする
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import TodoStorage from '@/todoStorage';
 import { State, Priority, TodoItem } from '@/todoItem'
 
+//現在の状態を保存する
 const todoStorage = new TodoStorage()
 
 @Component
 export default class App extends Vue {
+  //todoItem.tsから引っ張ってきた型を元に、配列を生成
   private todos: TodoItem[] = []
 
+  //Stateとstringを紐づけておく
   private labels = new Map<State, string>([
     [State.All, '全て'],
     [State.Working, '作業中'],
     [State.Done, '完了']
   ])
 
+  //Priorityとstringを紐づけておく
   private priority_labels = new Map<Priority, string>([
     [Priority.low, '低'],
     [Priority.mid, '中'],
     [Priority.high, '高']
   ])
 
+  //初期値
   private current: State = State.All
   private current_priority: Priority = Priority.mid
 
+  //状態によって表示するリストを変更する
   private get filteredTodos() {
     return this.todos.filter(t =>
       this.current === State.All ? true : this.current === t.state)
   }
 
+  //実はよくわかってない
   private created() {
     this.todos = todoStorage.fetchAll()
   }
 
+  //メモを追加する関数
   private addTodo() {
     const name = this.$refs.name as HTMLInputElement
     const deadline = this.$refs.deadline as HTMLInputElement
@@ -122,6 +150,7 @@ export default class App extends Vue {
     name.value = ''
   }
 
+  //ソートするやつ
   private sortList(name: string) {
     this.todos.sort((a, b) => {
       if(a[name] < b[name]) return -1;
@@ -131,16 +160,14 @@ export default class App extends Vue {
     return this.todos;
   }
 
+  //1つの行を消す操作
   private removeTodo(todo: TodoItem) {
     const index = this.todos.indexOf(todo)
     this.todos.splice(index, 1)
   }
 
+  //選択された複数の行を消す操作
   private removeChecked() {
-    /* this.todos.forEach(t => {
-      if(t.checked){ this.removeTodo(t) }
-    }) */
-
     //JS配列操作編中級2-3
     for(let i = 0; i < this.todos.length; i++){
       if(this.todos[i].checked){
@@ -150,14 +177,17 @@ export default class App extends Vue {
     }
   }
 
+  //全て消す
   private removeAll(){
     this.todos.splice(0);
   }
 
+  //状態を変化させる
   private toggleState(todo: TodoItem) {
     todo.state = todo.state === State.Working ? State.Done : State.Working
   }
 
+  //優先度を変化させる
   private togglePriority(todo: TodoItem) {
     //todo.priority = todo.priority === Priority.mid ? Priority.low : Priority.mid
     switch(todo.priority){
@@ -174,6 +204,7 @@ export default class App extends Vue {
     }
   }
 
+  //draggableを実装
   //https://reffect.co.jp/vue/vue-js-table-drag-and-drop
   private dragList(event: any, dragIndex: number){
     event.dataTransfer.effectAllowed = 'move'
