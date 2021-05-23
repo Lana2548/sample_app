@@ -15,7 +15,7 @@
       すべて削除
     </button>
     <!-- 選択したものを削除する -->
-    <button @click.ctrl="removeChecked()" class="button_remove">
+    <button @click="removeChecked()" class="button_remove">
       選択したものを削除
     </button>
 
@@ -48,9 +48,9 @@
             <!-- 複数行選択して削除するときに使うチェックボックス -->
             <th><input type="checkbox" v-model="todo.checked">{{ todo.id }}</th>
             <!-- 名前: string -->
-            <td>{{ todo.name }}</td>
+            <td :style="turnRed(todo)">{{ todo.name }}</td>
             <!-- 期限: Date -->
-            <td>{{ todo.deadline }}</td>
+            <td :style="turnRed(todo)">{{ todo.deadline }}</td>
             <!-- 優先度: Priority -->
             <td class="priority">
               <button @click="togglePriority(todo)">
@@ -83,7 +83,7 @@
     <h2>新しい作業の追加</h2>
     <form class="add-item" @submit.prevent="addTodo">
       タスク内容 <input type="text" ref="name">
-      締め切り <input type="date" ref="deadline">
+      締め切り <input type="datetime-local" ref="deadline">
       <button type="submit">追加</button>
     </form>
   </div>
@@ -136,16 +136,38 @@ export default class App extends Vue {
   private addTodo() {
     const name = this.$refs.name as HTMLInputElement
     const deadline = this.$refs.deadline as HTMLInputElement
-    if (!name.value.length) {
-      return
+    //Tを消す処理
+    const deadline_value = deadline.value.replace('T', ' ')
+    //比較用date
+    const deadline_date = String(new Date(deadline_value));
+    let data = new Date();
+    let now = data.getFullYear()
+    + '-' + ('0' + (data.getMonth() + 1)).slice(-2)
+    + '-' + ('0' + data.getDate()).slice(-2)
+    + ' ' + ('0' + data.getHours()).slice(-2)
+    + ':' + ('0' + data.getMinutes()).slice(-2)
+    //console.log(deadline_date)
+    console.log(deadline_value)
+    console.log(now)
+    //console.log(typeof(deadline_date))
+    //console.log(typeof(deadline_value))
+    //console.log(typeof(now))
+
+    let isexpired = false
+    if(deadline_value < now) {
+      isexpired = true
     }
+    console.log(isexpired)
+    //console.log(deadline_date);
+
     this.todos.push({
       id: todoStorage.nextId,
       name: name.value,
       state: State.Working,
-      deadline: deadline.value,
+      deadline: deadline_value,
       priority: Priority.mid,
-      checked: false
+      checked: false,
+      isExpired: isexpired
     })
     name.value = ''
   }
@@ -168,13 +190,7 @@ export default class App extends Vue {
 
   //選択された複数の行を消す操作
   private removeChecked() {
-    //JS配列操作編中級2-3
-    for(let i = 0; i < this.todos.length; i++){
-      if(this.todos[i].checked){
-        this.removeTodo(this.todos[i])
-        i--
-      }
-    }
+    this.todos = this.todos.filter(t => !t.checked)
   }
 
   //全て消す
@@ -191,7 +207,6 @@ export default class App extends Vue {
   private togglePriority(todo: TodoItem) {
     //todo.priority = todo.priority === Priority.mid ? Priority.low : Priority.mid
     switch(todo.priority){
-
       case Priority.low:
         todo.priority = Priority.mid
         break
@@ -201,6 +216,15 @@ export default class App extends Vue {
       case Priority.high:
         todo.priority = Priority.low
         break
+    }
+  }
+
+  //期限切れの
+  private turnRed(todo: TodoItem){
+    if(todo.isExpired){
+      return {color: 'red', background: 'pink'}
+    } else {
+      return {color: 'black'}
     }
   }
 
